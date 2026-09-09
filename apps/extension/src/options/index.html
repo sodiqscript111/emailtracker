@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Tracker Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="settings-container">
+    <header class="settings-header">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Email Tracker Settings</h1>
+        <p class="subtitle">Configure your personal email tracker backend and defaults</p>
+      </div>
+    </header>
+
+    <form id="settingsForm" class="settings-form">
+      <div class="form-group">
+        <label for="apiBaseUrl">Worker API Base URL</label>
+        <input type="url" id="apiBaseUrl" required placeholder="http://localhost:8787" />
+        <span class="hint">Use <code>http://localhost:8787</code> for local development or your Cloudflare Worker domain.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="apiToken">API Authentication Token</label>
+        <input type="password" id="apiToken" placeholder="Enter your secret token" />
+        <span class="hint">Matches <code>API_AUTH_TOKEN</code> configured on your Cloudflare Worker.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="dashboardUrl">Dashboard URL</label>
+        <input type="url" id="dashboardUrl" placeholder="http://localhost:5173" />
+        <span class="hint">URL of your React dashboard application.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="toggle-label">
+          <input type="checkbox" id="defaultTrackingEnabled" />
+          <span>Enable tracking by default on new emails</span>
+        </label>
+        <span class="hint">Default is OFF. When enabled, the "Track email" checkbox will be checked automatically.</span>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="save-btn" id="saveBtn">Save Settings</button>
+        <span class="save-status" id="saveStatus"></span>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="options.ts"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Email Open Tracker",
+  "version": "1.0.0",
+  "description": "Self-hosted personal email open tracker for Gmail",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "http://localhost:8787/*",
+    "http://127.0.0.1:8787/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Email Tracker"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "128": "icons/icon.svg"
+  }
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Tracker</title>
+  <link rel="stylesheet" href="src/popup/popup.css" />
+</head>
+<body>
+  <div class="popup-container">
+    <header class="header">
+      <div class="title-area">
+        <div class="logo-circle">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h1>Email Tracker</h1>
+      </div>
+      <div class="status-indicator" id="statusIndicator">
+        <span class="dot"></span>
+        <span class="status-label">Active</span>
+      </div>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value" id="totalCount">-</span>
+        <span class="stat-label">Tracked</span>
+      </div>
+      <div class="stat-card stat-opened">
+        <span class="stat-value" id="openedCount">-</span>
+        <span class="stat-label">Opened</span>
+      </div>
+      <div class="stat-card stat-unopened">
+        <span class="stat-value" id="unopenedCount">-</span>
+        <span class="stat-label">Not opened</span>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Recent Tracked Emails</h2>
+        <button class="refresh-btn" id="refreshBtn" title="Refresh list">↻</button>
+      </div>
+      <div class="email-list" id="emailList">
+        <div class="empty-state">Loading tracked emails...</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <button class="btn btn-secondary" id="optionsBtn">Options</button>
+      <button class="btn btn-primary" id="dashboardBtn">Open Dashboard ↗</button>
+    </footer>
+  </div>
+
+  <script type="module" src="src/popup/popup.ts"></script>
+</body>
+</html>

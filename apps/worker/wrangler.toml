@@ -1,0 +1,21 @@
+name = "email-tracker-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "email_tracker_db"
+database_id = "30f5b07c-b8d4-4fd4-9cf8-f93c8e35e1b1"
+migrations_dir = "migrations"
+
+[vars]
+API_AUTH_TOKEN = "dev-secret-token-change-in-prod"
+IP_SALT = "email-tracker-secure-ip-salt-98234"
+ALLOWED_ORIGINS = "http://localhost:5173,https://mail.google.com"
+
+# Production environment placeholder
+# [env.production]
+# route = "https://tracker.yourdomain.com/*"
+# [env.production.vars]
+# BASE_URL = "https://tracker.yourdomain.com"

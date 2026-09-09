@@ -1,0 +1,26 @@
+{
+  "name": "email-tracker-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:worker",
+    "dev:worker": "npm run dev --workspace=@email-tracker/worker",
+    "dev:dashboard": "npm run dev --workspace=@email-tracker/dashboard",
+    "build": "npm run build --workspaces",
+    "build:worker": "npm run build --workspace=@email-tracker/worker",
+    "build:extension": "npm run build --workspace=@email-tracker/extension",
+    "build:dashboard": "npm run build --workspace=@email-tracker/dashboard",
+    "package:extension": "npm run build:extension && powershell -Command \"Compress-Archive -Path apps/extension/dist/* -DestinationPath email-tracker-extension.zip -Force\"",
+    "activity": "node scripts/activity.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
