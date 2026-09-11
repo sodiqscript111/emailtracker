@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 import type { TrackedEmailSummary } from '@email-tracker/shared';
-import { Search, Filter, CheckCircle, Clock, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  CheckCircle,
+  Clock,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  Calendar,
+  Send,
+  MailCheck,
+} from 'lucide-react';
 
 interface Props {
   emails: TrackedEmailSummary[];
@@ -15,6 +26,8 @@ interface Props {
   onSelectEmail: (email: TrackedEmailSummary) => void;
 }
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return '—';
   const d = new Date(timestamp);
@@ -24,6 +37,20 @@ function formatDate(timestamp: number | null): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function getElapsedDaysInfo(timestamp: number | null): { text: string; isWeek: boolean } {
+  if (!timestamp) return { text: '—', isWeek: false };
+  const diffMs = Date.now() - timestamp;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days >= 7) {
+    return { text: `${days}d ago · Follow up!`, isWeek: true };
+  }
+  if (days === 0) {
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    return { text: hours <= 1 ? 'Today' : `${hours}h ago`, isWeek: false };
+  }
+  return { text: `${days}d ago`, isWeek: false };
 }
 
 export const EmailTable: React.FC<Props> = ({
@@ -38,10 +65,24 @@ export const EmailTable: React.FC<Props> = ({
   onPageChange,
   onSelectEmail,
 }) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'week'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'opened' | 'unopened'>('all');
 
+  // Count how many emails are 7+ days old
+  const weekOldCount = emails.filter((item) => {
+    const sentTime = item.sentAt || item.createdAt;
+    return sentTime && (Date.now() - sentTime) >= ONE_WEEK_MS;
+  }).length;
+
   const filtered = emails.filter((item) => {
+    const sentTime = item.sentAt || item.createdAt;
+    const isWeekOld = sentTime && (Date.now() - sentTime) >= ONE_WEEK_MS;
+
+    if (activeTab === 'week' && !isWeekOld) {
+      return false;
+    }
+
     const matchesSearch =
       item.recipientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.senderEmail && item.senderEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -58,7 +99,40 @@ export const EmailTable: React.FC<Props> = ({
 
   return (
     <div className="card-section">
-      <div className="section-header">
+      {/* Tab Header */}
+      <div className="table-tabs-header">
+        <div className="filter-tabs">
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            <MailCheck size={16} />
+            <span>All Emails</span>
+            <span className="tab-badge">{total}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-btn tab-week ${activeTab === 'week' ? 'active' : ''}`}
+            onClick={() => setActiveTab('week')}
+            title="Emails where 7 or more days have passed without reaching out again"
+          >
+            <Calendar size={16} />
+            <span>It's Been a Week</span>
+            <span
+              className="tab-badge"
+              style={
+                weekOldCount > 0
+                  ? { background: '#fef3c7', color: '#b45309', fontWeight: 700 }
+                  : undefined
+              }
+            >
+              {weekOldCount}
+            </span>
+          </button>
+        </div>
+
         <div className="search-filter-bar">
           <div className="search-input-wrapper">
             <Search className="search-icon" size={16} />
@@ -99,6 +173,7 @@ export const EmailTable: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Table Content */}
       <div className="table-wrapper">
         <table className="data-table">
           <thead>
@@ -107,27 +182,53 @@ export const EmailTable: React.FC<Props> = ({
               <th>Recipient</th>
               <th>Subject</th>
               <th>Status</th>
+              <th>Age / Follow-up</th>
               <th>Sent</th>
               <th>Last opened</th>
-              <th>Requests</th>
+              <th>Opens</th>
+              <th style={{ textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                   Loading emails...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                  {emails.length === 0 ? 'No tracked emails recorded yet.' : 'No emails match your filter.'}
+                <td colSpan={9} style={{ padding: '0' }}>
+                  {activeTab === 'week' ? (
+                    <div className="empty-tab-state">
+                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎉</div>
+                      <h3>No 7-Day Follow-ups Due</h3>
+                      <p>
+                        All tracked job applications were sent within the last 7 days.
+                        When an outreach reaches 1 week old, it will automatically appear here!
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      {emails.length === 0 ? 'No tracked emails recorded yet.' : 'No emails match your filter.'}
+                    </div>
+                  )}
                 </td>
               </tr>
             ) : (
               filtered.map((email) => {
                 const isOpened = email.openCount > 0;
+                const sentTime = email.sentAt || email.createdAt;
+                const elapsed = getElapsedDaysInfo(sentTime);
+
+                const followUpSubject = email.subject.toLowerCase().startsWith('re:')
+                  ? email.subject
+                  : `Following up: ${email.subject || 'Application'}`;
+
+                const mailtoUrl = `mailto:${email.recipientEmail}?subject=${encodeURIComponent(
+                  followUpSubject
+                )}`;
+
                 return (
                   <tr
                     key={email.id}
@@ -149,7 +250,7 @@ export const EmailTable: React.FC<Props> = ({
                       </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>{email.recipientEmail}</td>
-                    <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {email.subject || '(No subject)'}
                     </td>
                     <td>
@@ -167,9 +268,30 @@ export const EmailTable: React.FC<Props> = ({
                         </span>
                       )}
                     </td>
-                    <td>{formatDate(email.sentAt || email.createdAt)}</td>
+                    <td>
+                      {elapsed.isWeek ? (
+                        <span className="badge badge-week-warning">
+                          <AlertCircle size={12} /> {elapsed.text}
+                        </span>
+                      ) : (
+                        <span className="badge badge-recent">
+                          {elapsed.text}
+                        </span>
+                      )}
+                    </td>
+                    <td>{formatDate(sentTime)}</td>
                     <td>{formatDate(email.lastOpenedAt)}</td>
                     <td style={{ fontWeight: 600 }}>{email.openCount > 0 ? email.openCount : '—'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <a
+                        href={mailtoUrl}
+                        className="btn-reachout btn-reachout-sm"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Open email to reach out again"
+                      >
+                        <Send size={11} /> Reach out
+                      </a>
+                    </td>
                   </tr>
                 );
               })
@@ -178,9 +300,10 @@ export const EmailTable: React.FC<Props> = ({
         </table>
       </div>
 
+      {/* Pagination Footer */}
       <div className="pagination-bar">
         <span className="page-info">
-          Showing {emails.length} of {total} total tracked emails (Page {page} of {totalPages})
+          Showing {filtered.length} of {activeTab === 'week' ? weekOldCount : total} tracked emails (Page {page} of {totalPages})
         </span>
 
         <div className="page-buttons">

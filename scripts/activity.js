@@ -5,6 +5,7 @@
  * Usage:
  *   npm run activity
  *   npm run activity -- --watch
+ *   npm run activity -- --week
  *   npm run activity -- --sender=example@gmail.com
  */
 
@@ -38,8 +39,11 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8787';
 const API_TOKEN = process.env.API_AUTH_TOKEN || 'dev-secret-token-change-in-prod';
 const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:5173';
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 const args = process.argv.slice(2);
 const isWatch = args.includes('--watch') || args.includes('-w');
+const isWeekFilter = args.includes('--week') || args.includes('-7') || args.includes('--followup');
 const senderArg = args.find(a => a.startsWith('--sender='))?.split('=')[1];
 
 async function fetchActivity() {
@@ -58,7 +62,7 @@ async function fetchActivity() {
     }
 
     // 2. Fetch tracked emails
-    let emailsUrl = `${API_BASE_URL}/api/tracked-emails?limit=50`;
+    let emailsUrl = `${API_BASE_URL}/api/tracked-emails?limit=100`;
     if (senderArg) {
       emailsUrl += `&senderEmail=${encodeURIComponent(senderArg)}`;
     }
@@ -70,8 +74,19 @@ async function fetchActivity() {
     }
 
     const emailsData = await emailsRes.json();
-    const emails = emailsData.items || [];
+    let emails = emailsData.items || [];
     const total = emailsData.total || emails.length;
+
+    // Calculate 7+ day old count
+    const now = Date.now();
+    const weekOldEmails = emails.filter(e => {
+      const t = e.sentAt || e.createdAt;
+      return t && (now - t) >= ONE_WEEK_MS;
+    });
+
+    if (isWeekFilter) {
+      emails = weekOldEmails;
+    }
 
     if (isWatch) {
       console.clear();
@@ -86,12 +101,18 @@ async function fetchActivity() {
     if (senderArg) {
       console.log(`Filtering by sender: \x1b[33m${senderArg}\x1b[0m`);
     }
-    console.log(`Total Emails Tracked: \x1b[1m${total}\x1b[0m | Displaying: ${emails.length}`);
+    if (isWeekFilter) {
+      console.log(`Filter Mode: \x1b[33m⏰ It's Been a Week (7d+ follow-up filter active)\x1b[0m`);
+    }
+    console.log(`Total Emails: \x1b[1m${total}\x1b[0m | 7d+ Follow-up Due: \x1b[1m\x1b[33m${weekOldEmails.length}\x1b[0m | Displaying: ${emails.length}`);
     console.log('---------------------------------------------------------------');
 
     if (emails.length === 0) {
-      console.log('\n\x1b[33mNo tracked emails recorded yet.\x1b[0m');
-      console.log('Send an email with the Chrome extension enabled to see it appear here!\n');
+      if (isWeekFilter) {
+        console.log('\n\x1b[32m🎉 No follow-ups due! All your tracked emails are less than a week old.\x1b[0m\n');
+      } else {
+        console.log('\n\x1b[33mNo tracked emails recorded yet.\x1b[0m\n');
+      }
     } else {
       const formatted = emails.map(e => {
         const isOpened = (e.openCount && e.openCount > 0) || e.status === 'opened';
@@ -99,27 +120,42 @@ async function fetchActivity() {
           ? `\x1b[32mOPENED (${e.openCount}x)\x1b[0m` 
           : '\x1b[33mUNOPENED\x1b[0m';
 
-        const sentDate = e.createdAt ? new Date(e.createdAt).toLocaleString() : '-';
-        const openedDate = e.firstOpenedAt ? new Date(e.firstOpenedAt).toLocaleString() : '-';
+        const sentTimestamp = e.sentAt || e.createdAt;
+        const diffMs = sentTimestamp ? (now - sentTimestamp) : 0;
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        let ageStr = '-';
+        if (sentTimestamp) {
+          if (days >= 7) {
+            ageStr = `\x1b[33m⏰ ${days}d (Follow-up!)\x1b[0m`;
+          } else if (days === 0) {
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            ageStr = hours <= 1 ? 'Today' : `${hours}h ago`;
+          } else {
+            ageStr = `${days}d ago`;
+          }
+        }
+
+        const sentDate = sentTimestamp ? new Date(sentTimestamp).toLocaleDateString() : '-';
 
         return {
-          'Sender': e.senderEmail || '(unknown)',
           'Recipient': e.recipientEmail,
           'Subject': (e.subject || '(No Subject)').slice(0, 28),
           'Status': statusStr,
-          'Opened At': openedDate,
-          'Sent At': sentDate
+          'Age / Follow-up': ageStr,
+          'Sent Date': sentDate,
+          'Sender': e.senderEmail || '(unknown)',
         };
       });
 
       console.table(formatted);
     }
 
-    const now = new Date().toLocaleTimeString();
+    const timeStr = new Date().toLocaleTimeString();
     if (isWatch) {
-      console.log(`\x1b[90mLast refreshed: ${now} (Auto-refreshing every 5s. Press Ctrl+C to exit)\x1b[0m`);
+      console.log(`\x1b[90mLast refreshed: ${timeStr} (Auto-refreshing every 5s. Press Ctrl+C to exit)\x1b[0m`);
     } else {
-      console.log(`\x1b[90mChecked at: ${now}. Tip: Run with --watch for live live-updating monitor.\x1b[0m`);
+      console.log(`\x1b[90mChecked at: ${timeStr}. Tip: Run with --week to see 7-day follow-ups, or --watch for live updates.\x1b[0m`);
     }
   } catch (err) {
     console.error('\x1b[31mFailed to connect to tracker backend:\x1b[0m', err.message);

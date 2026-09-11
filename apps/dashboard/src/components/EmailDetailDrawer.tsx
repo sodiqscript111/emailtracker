@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { TrackedEmailSummary, TrackedEmailDetail } from '@email-tracker/shared';
 import { dashboardApi } from '../api/client.js';
-import { X, Trash2, AlertCircle, CheckCircle, Clock, Info } from 'lucide-react';
+import { X, Trash2, AlertCircle, CheckCircle, Clock, Info, Send } from 'lucide-react';
 
 interface Props {
   email: TrackedEmailSummary;
@@ -199,9 +199,22 @@ export const EmailDetailDrawer: React.FC<Props> = ({ email, onClose, onDeleted }
           >
             <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete Email'}
           </button>
-          <button className="btn btn-default" onClick={onClose}>
-            Close
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <a
+              href={`mailto:${email.recipientEmail}?subject=${encodeURIComponent(
+                email.subject.toLowerCase().startsWith('re:')
+                  ? email.subject
+                  : `Following up: ${email.subject || 'Application'}`
+              )}`}
+              className="btn-reachout"
+              title="Open email composer to reach out again"
+            >
+              <Send size={14} /> Reach Out Again
+            </a>
+            <button className="btn btn-default" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
