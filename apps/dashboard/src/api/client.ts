@@ -12,17 +12,38 @@ export interface DashboardSettings {
 
 const STORAGE_KEY = 'email_tracker_dashboard_settings';
 
+function getDefaultApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.startsWith('email-tracker-dashboard.')) {
+      const subdomain = hostname.slice('email-tracker-dashboard.'.length);
+      return `https://email-tracker-worker.${subdomain}`;
+    }
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+}
+
 export function getSettings(): DashboardSettings {
+  const defaultUrl = getDefaultApiBaseUrl();
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      // Auto-heal: If in HTTPS production but localStorage has localhost, upgrade to live worker URL
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && parsed.apiBaseUrl?.includes('localhost')) {
+        parsed.apiBaseUrl = defaultUrl;
+        saveSettings(parsed);
+      }
+      return {
+        apiBaseUrl: parsed.apiBaseUrl || defaultUrl,
+        apiToken: parsed.apiToken || 'dev-secret-token-change-in-prod',
+      };
     }
   } catch {
     // Ignore parse error
   }
   return {
-    apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787',
+    apiBaseUrl: defaultUrl,
     apiToken: import.meta.env.VITE_API_TOKEN || 'dev-secret-token-change-in-prod',
   };
 }
